@@ -102,6 +102,62 @@ export class Scheduler {
     ): Schedule {
         if (ads.length === 0) return {};
 
-        
+        const cloneSchedule = (source: Schedule): Schedule => {
+            const copy: Schedule = {};
+            for (const [areaId, areaSchedule] of Object.entries(source)) {
+                copy[areaId] = [...areaSchedule];
+            }
+            return copy;
+        };
+
+        let schedule: Schedule = {};
+
+        for (const ad of ads) {
+            let bestScheduleForAd = schedule;
+
+            for (const area of areas) {
+                const areaSchedule = schedule[area.areaId] ?? [];
+                const candidateStartTimes = Array.from(new Set([
+                    ad.timeReceived,
+                    this.getNextAvailableStartTime(areaSchedule),
+                    ...areaSchedule.map((scheduledAd) => scheduledAd.endTime),
+                ])).sort((a, b) => a - b);
+
+                for (const startTime of candidateStartTimes) {
+                    if (!this.placementEngine.canScheduleAd(ad, area, schedule, startTime)) {
+                        continue;
+                    }
+
+                    const candidateSchedule = cloneSchedule(schedule);
+                    if (!candidateSchedule[area.areaId]) {
+                        candidateSchedule[area.areaId] = [];
+                    }
+
+                    candidateSchedule[area.areaId].push({
+                        adId: ad.adId,
+                        areaId: area.areaId,
+                        startTime,
+                        endTime: startTime + ad.duration,
+                    });
+
+                    const comparison = this.compareSchedules(
+                        ads,
+                        areas,
+                        candidateSchedule,
+                        bestScheduleForAd,
+                        decayRate
+                    );
+
+                    if (comparison > 0) {
+                        bestScheduleForAd = candidateSchedule;
+                    }
+                }
+
+            }
+
+            schedule = bestScheduleForAd;
+        }
+
+        return schedule;
     }
 }
