@@ -91,7 +91,6 @@ export class PlacementEngine {
             adsById.set(ads[i].adId, ads[i]);
         }
 
-        // TODO: move this outside the function??
         const isScheduledAdEntryValid = (scheduledAd: ScheduledAd): boolean => {
             const ad = adsById.get(scheduledAd.adId);
             if (!ad) {

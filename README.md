@@ -25,3 +25,29 @@ Check that it worked: `node --version` and `npm --version` should print version 
 Submit your work via the form below. See [submission_instructions.md](submission_instructions.md) for how to hand in your fork and what counts for grading.
 
 **[Submit here](https://docs.google.com/forms/d/e/1FAIpQLSdnZdqmpu610ZODDeetoYbypvy3sYkje1Zc2RjE9pSMU_4CCw/viewform?usp=publish-editor)**
+
+### Product Concept
+
+A B2B software platform that helps brands and media operations run fleets of ad-enabled drones efficiently, safely, and profitably. It combines three core capabilities in one system:
+* **Fleet Management**: track drone health, location, battery state, ownership, and assignment
+* **Technician dispatch**: route field technicians for maintenance, repairs, and battery-swap operations
+* **Revenue optimization**: schedule and optimize ad campaigns by time, location, audience density, and performance decay
+
+### Business Objective
+
+Our objective is to become the operating system for drone-based advertising by maximizing two things:
+* **Uptime**: keep ad drones mission-ready with predictive maintenance and fast technician response
+* **Revenue per flight hour**: optimize which ads run, where they run, and when they run to increase yield for campaigns
+
+### Target Demographic
+
+**Primary Target Customers**:
+* Digital media companies expanding into aerial ad markets
+* Large retail/event marketing agencies operators for geo-targeted ad campaigns
+* Venue and entertainment operations using drones for sponsored promotions
+
+**Secondary Users**
+* Fleet operations mangers who monitor availability and performance
+* Field technicians who execute repairs, battery swaps, and inspections
+* Campaign managers / ad operation teams who schedule and optimize creatives
+* Executive stakeholders who track utilization, uptime, and revenue metrics
