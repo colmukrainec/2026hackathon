@@ -62,17 +62,83 @@ export class RouteOptimizer {
 
     // ── Your implementation below ─────────────────────────────────────────────
 
+    // return total km for the given route
     calculateRouteDistance(
         technician: Technician,
         boxes: Box[],
         routeIds: string[]
     ): number | null {
-        // TODO: implement this method
-        throw new Error('Not implemented');
+        if (routeIds.length === 0) {
+            return 0;
+        }
+
+        const boxesById = new Map<string, Box>();
+        for (const box of boxes) {
+            boxesById.set(box.id, box);
+        }
+
+        let totalDistance = 0;
+        let currentLocation = technician.startLocation;
+
+        for (const boxId of routeIds) {
+            const nextBox = boxesById.get(boxId);
+            if (!nextBox) {
+                return null;
+            }
+
+            totalDistance += this.haversineDistance(currentLocation, nextBox.location);
+            currentLocation = nextBox.location;
+        }
+
+        return totalDistance;
     }
 
+    // currently this chooses the closest next box at each step
     findShortestRoute(technician: Technician, boxes: Box[]): RouteResult {
-        // TODO: implement this method
-        throw new Error('Not implemented');
+        if (boxes.length === 0) {
+            return {
+                technicianId: technician.id,
+                route: [],
+                totalDistanceKm: 0,
+            };
+        }
+
+        const remainingBoxes = [...boxes]; // copy boxes
+        const route: string[] = [];
+        let currentLocation = technician.startLocation;
+
+        while (remainingBoxes.length > 0) {
+            let bestIndex = 0;
+            let bestDistance = this.haversineDistance(currentLocation, remainingBoxes[0].location); // distance to the first box
+            
+            // Iterate through remaining boxes to find the closest one
+            for (let index = 1; index < remainingBoxes.length; index++) { // 
+                const candidate = remainingBoxes[index];
+                const candidateDistance = this.haversineDistance(currentLocation, candidate.location);
+                const currentBest = remainingBoxes[bestIndex];
+
+                const isBetterDistance = candidateDistance < bestDistance;
+                const isTieWithSmallerId =
+                    Math.abs(candidateDistance - bestDistance) < 1e-9 &&
+                    candidate.id < currentBest.id;
+
+                if (isBetterDistance || isTieWithSmallerId) {
+                    bestIndex = index;
+                    bestDistance = candidateDistance;
+                }
+            }
+
+            const nextBox = remainingBoxes.splice(bestIndex, 1)[0];
+            route.push(nextBox.id);
+            currentLocation = nextBox.location;
+        }
+
+        const totalDistanceKm = this.calculateRouteDistance(technician, boxes, route) ?? 0;
+
+        return {
+            technicianId: technician.id,
+            route,
+            totalDistanceKm,
+        };
     }
 }
