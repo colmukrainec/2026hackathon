@@ -58,15 +58,15 @@ export class DeviceManager {
     }
 
     getDevicesByVersion(version: string): Device[] | null {
-      return this.devices.filter(d => d.version === version);
+      return this.devices.filter(d => d.version === version) ?? null;
     }
 
     getDevicesByUserId(user_id: string): Device[] | null {
-      return this.devices.filter(d => d.user_id === user_id);
+      return this.devices.filter(d => d.user_id === user_id) ?? null;
     }
 
     getDevicesByStatus(status: 'active' | 'inactive' | 'pending' | 'failed'): Device[] | null {
-      return this.devices.filter(d => d.status === status);
+      return this.devices.filter(d => d.status === status) ?? null;
     }
 
     getDevicesInArea(latitude: number, longitude: number, radius_km: number): Device[] | null {
@@ -75,7 +75,7 @@ export class DeviceManager {
       return this.devices.filter(d => {
         const distance = haversineDistance({ latitude, longitude } as Location, d.location);
         return distance <= radius_km;
-      });
+      }) ?? null;
     } 
 
     getDevicesNearDevice(device_id: string, radius_km: number): Device[] | null {
@@ -91,7 +91,7 @@ export class DeviceManager {
         .filter(d => {
           const distance = haversineDistance(sourceDevice.location, d.location);
           return distance <= radius_km;
-        });
+        }) ?? null;
     }
 
     getAllDevices(): Device[] {
