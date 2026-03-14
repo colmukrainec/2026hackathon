@@ -11,11 +11,14 @@ interface Drone {
   color: string;
 }
 
-const DRONE_COUNT = 150;
+const DRONE_COUNT = 300;
+
+type Formation = 'random' | 'billboard' | 'spiral' | 'heart' | 'wave';
 
 export const DroneVisual: React.FC = () => {
   const [drones, setDrones] = useState<Drone[]>([]);
-  const [formation, setFormation] = useState<'random' | 'billboard' | 'circle'>('random');
+  const [formation, setFormation] = useState<Formation>('random');
+  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,65 +34,108 @@ export const DroneVisual: React.FC = () => {
 
     const interval = setInterval(() => {
       setFormation(prev => {
-        if (prev === 'random') return 'billboard';
-        if (prev === 'billboard') return 'circle';
-        return 'random';
+        const sequence: Formation[] = ['random', 'billboard', 'spiral', 'heart', 'wave'];
+        const currentIndex = sequence.indexOf(prev);
+        return sequence[(currentIndex + 1) % sequence.length];
       });
-    }, 5000);
+    }, 6000);
 
-    return () => clearInterval(interval);
+    const handleMouseMove = (e: MouseEvent) => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setMousePos({
+          x: ((e.clientX - rect.left) / rect.width) * 100,
+          y: ((e.clientY - rect.top) / rect.height) * 100
+        });
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
   }, []);
 
   useEffect(() => {
     setDrones(prev => prev.map(drone => {
-      let tx, ty;
+      let tx, ty, color;
+      const i = drone.id;
+
       if (formation === 'billboard') {
-        // Form a grid
-        const cols = 15;
-        const row = Math.floor(drone.id / cols);
-        const col = drone.id % cols;
-        tx = 30 + (col * 3);
-        ty = 30 + (row * 4);
-      } else if (formation === 'circle') {
-        const angle = (drone.id / DRONE_COUNT) * Math.PI * 2;
-        tx = 50 + Math.cos(angle) * 20;
-        ty = 50 + Math.sin(angle) * 20;
+        const cols = 20;
+        const row = Math.floor(i / cols);
+        const col = i % cols;
+        tx = 25 + (col * 2.5);
+        ty = 30 + (row * 3.5);
+        color = '#3DA9FF';
+      } else if (formation === 'spiral') {
+        const angle = 0.2 * i;
+        const radius = 0.15 * i;
+        tx = 50 + (radius * Math.cos(angle)) * 0.5;
+        ty = 50 + (radius * Math.sin(angle)) * 0.5;
+        color = '#FFFFFF';
+      } else if (formation === 'heart') {
+        const t = (i / DRONE_COUNT) * Math.PI * 2;
+        // Parametric heart equation
+        const x = 16 * Math.pow(Math.sin(t), 3);
+        const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+        tx = 50 + x * 1.5;
+        ty = 45 + y * 1.5;
+        color = '#8A5CFF';
+      } else if (formation === 'wave') {
+        tx = (i / DRONE_COUNT) * 100;
+        ty = 50 + Math.sin(tx * 0.2 + Date.now() * 0.001) * 15;
+        color = i % 2 === 0 ? '#3DA9FF' : '#8A5CFF';
       } else {
         tx = Math.random() * 100;
         ty = Math.random() * 100;
+        color = '#FFFFFF';
       }
-      return { ...drone, targetX: tx, targetY: ty };
+
+      // Add mouse repulsion
+      const dx = tx - mousePos.x;
+      const dy = ty - mousePos.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 15) {
+        const force = (15 - dist) / 15;
+        tx += (dx / dist) * force * 10;
+        ty += (dy / dist) * force * 10;
+      }
+
+      return { ...drone, targetX: tx, targetY: ty, color };
     }));
-  }, [formation]);
+  }, [formation, mousePos]);
 
   return (
-    <div ref={containerRef} className="absolute inset-0 overflow-hidden pointer-events-none opacity-60">
+    <div ref={containerRef} className="absolute inset-0 overflow-hidden pointer-events-none opacity-80">
       {drones.map(drone => (
         <motion.div
           key={drone.id}
-          className="absolute w-1 h-1 bg-white rounded-full drone-light"
+          className={`absolute w-1 h-1 rounded-full ${
+            drone.color === '#3DA9FF' ? 'drone-light-blue' : 
+            drone.color === '#8A5CFF' ? 'drone-light-purple' : 'drone-light'
+          }`}
+          style={{ backgroundColor: drone.color }}
           animate={{
             left: `${drone.targetX}%`,
             top: `${drone.targetY}%`,
           }}
           transition={{
-            duration: 3 + Math.random() * 2,
-            ease: "easeInOut"
+            duration: formation === 'random' ? 4 : 2,
+            ease: "circOut"
           }}
         />
       ))}
       
-      {/* Background Stars */}
-      {Array.from({ length: 50 }).map((_, i) => (
-        <div
-          key={`star-${i}`}
-          className="absolute w-0.5 h-0.5 bg-white opacity-20 rounded-full"
-          style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-          }}
-        />
-      ))}
+      {/* Dynamic Ambient Light */}
+      <motion.div 
+        className="absolute inset-0 bg-gradient-to-tr from-sky-blue/5 to-sky-purple/5"
+        animate={{
+          opacity: [0.3, 0.6, 0.3]
+        }}
+        transition={{ duration: 5, repeat: Infinity }}
+      />
     </div>
   );
 };
