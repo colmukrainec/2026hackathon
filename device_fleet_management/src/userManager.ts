@@ -33,11 +33,11 @@ export class UserManager {
     }
 
     getUsersByEmail(email: string): User[] | null {
-      return this.users.filter(u => u.email === email);
+      return this.users.filter(u => u.email === email) ?? null;
     }
 
     getUsersByPhone(phone: string): User[] | null {
-      return this.users.filter(u => u.phone === phone);
+      return this.users.filter(u => u.phone === phone) ?? null;
     }
 
     getAllUsers(): User[] {
