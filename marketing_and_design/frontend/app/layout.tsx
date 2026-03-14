@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SkyScanner",
+  title: "SkyCanvas",
   description: "A revolutionary drone-based advertising platform that delivers unparalleled visibility and engagement for brands worldwide.",
 };
 
