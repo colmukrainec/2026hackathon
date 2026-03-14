@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RouteForge",
-  description: "A suite of tools for optimizing technician dispatch and revenue.",
+  title: "SkyScanner",
+  description: "A revolutionary drone-based advertising platform that delivers unparalleled visibility and engagement for brands worldwide.",
 };
 
 export default function RootLayout({
