@@ -78,8 +78,24 @@ export class TeamSizer {
         boxes: Box[],
         routeIds: string[]
     ): number | null {
-        // TODO: implement this method
-        throw new Error('Not implemented');
+        const boxMap = new Map<string, Box>();
+        for (const b of boxes) { // pre-map boxes by ID for quick lookup
+            boxMap.set(b.id, b);
+        }
+
+        let total = 0;
+        let current = startLocation;
+
+        for (const id of routeIds) { // for each box ID in the route
+            const box = boxMap.get(id);
+            if (!box) return null;
+
+            total += this.travelTimeMinutes(current, box.location, speedKmh); // add travel time to next box
+            total += box.fixTimeMinutes;
+            current = box.location;
+        }
+
+        return total;
     }
 
     tryAssign(
@@ -89,8 +105,84 @@ export class TeamSizer {
         numTechnicians: number,
         deadlineMinutes: number
     ): TechnicianAssignment[] | null {
-        // TODO: implement this method
-        throw new Error('Not implemented');
+        if (numTechnicians < 0) return null;
+        if (boxes.length === 0) {
+            const assignments: TechnicianAssignment[] = [];
+
+            for (let i = 0; i < numTechnicians; i++) {
+                assignments.push({
+                    technicianLabel: `Technician ${i + 1}`,
+                    assignedBoxIds: [],
+                    totalTimeMinutes: 0
+                });
+            }
+
+            return assignments;
+        }
+        if (numTechnicians === 0) return null;
+
+        //if one box alone cannot fit, no assignment can work.
+        for (const box of boxes) {
+            const singleBoxTime =
+                this.travelTimeMinutes(startLocation, box.location, speedKmh) +
+                box.fixTimeMinutes;
+            if (singleBoxTime > deadlineMinutes) {
+                return null;
+            }
+        }
+
+        // Keep routes and running totals per technician.
+        const routes: string[][] = Array.from({ length: numTechnicians }, () => []);
+        const totals: number[] = new Array(numTechnicians).fill(0);
+        const lastLocs: Location[] = Array.from({ length: numTechnicians }, () => startLocation);
+
+        // Assign harder boxes first (greedy bin-packing style)
+        const sorted = [...boxes].sort((a, b) => {
+            if (b.fixTimeMinutes !== a.fixTimeMinutes) {
+                return b.fixTimeMinutes - a.fixTimeMinutes;
+            }
+            return a.id.localeCompare(b.id);
+        });
+        
+        // For each box, find the technician who can take it with the least added time:
+        for (const box of sorted) {
+            let bestTech = -1;
+            let bestAddedTime = Number.POSITIVE_INFINITY;
+
+            for (let t = 0; t < numTechnicians; t++) {
+                const travel = this.travelTimeMinutes(lastLocs[t], box.location, speedKmh);
+                const added = travel + box.fixTimeMinutes;
+                const newTotal = totals[t] + added;
+
+                if (newTotal <= deadlineMinutes) {
+                    if (
+                        added < bestAddedTime ||
+                        (added === bestAddedTime && t < bestTech)
+                    ) {
+                        bestAddedTime = added;
+                        bestTech = t;
+                    }
+                }
+            }
+
+            // No technician can take this box within deadline.
+            if (bestTech === -1) return null;
+
+            routes[bestTech].push(box.id);
+            totals[bestTech] += bestAddedTime;
+            lastLocs[bestTech] = box.location;
+        }
+
+        const assignments: TechnicianAssignment[] = [];
+        for (let t = 0; t < numTechnicians; t++) {
+            assignments.push({
+                technicianLabel: `Technician ${t + 1}`,
+                assignedBoxIds: routes[t],
+                totalTimeMinutes: totals[t]
+            });
+        }
+
+        return assignments;
     }
 
     findMinimumTeamSize(
@@ -99,7 +191,56 @@ export class TeamSizer {
         boxes: Box[],
         deadlineMinutes: number
     ): TeamSizeResult {
-        // TODO: implement this method
-        throw new Error('Not implemented');
+        if (boxes.length === 0) {
+            return {
+                techniciansNeeded: 0,
+                assignments: [],
+                feasible: true
+            };
+        }
+
+        // Lower bound: total minimum effort if every box were done directly from start.
+        let minPossibleTotal = 0;
+        for (const box of boxes) {
+            const single =
+                this.travelTimeMinutes(startLocation, box.location, speedKmh) +
+                box.fixTimeMinutes;
+
+            // Immediate global impossible case.
+            if (single > deadlineMinutes) {
+                return {
+                    techniciansNeeded: 0,
+                    assignments: [],
+                    feasible: false
+                };
+            }
+            minPossibleTotal += single;
+        }
+
+        const lowerBound = Math.max(1, Math.ceil(minPossibleTotal / deadlineMinutes));
+
+        for (let n = lowerBound; n <= boxes.length; n++) {
+            const assignments = this.tryAssign(
+                startLocation,
+                speedKmh,
+                boxes,
+                n,
+                deadlineMinutes
+            );
+
+            if (assignments !== null) {
+                return {
+                    techniciansNeeded: n,
+                    assignments,
+                    feasible: true
+                };
+            }
+        }
+
+        return {
+            techniciansNeeded: 0,
+            assignments: [],
+            feasible: false
+        };
     }
 }
