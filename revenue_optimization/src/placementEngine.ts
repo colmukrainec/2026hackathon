@@ -31,7 +31,7 @@ export class PlacementEngine {
     }
 
     isAdCompatibleWithArea(ad: Ad, area: Area): boolean {
-        return ad.bannedLocations.filter(location => location === area.location).length === 0;
+        return !ad.bannedLocations.includes(area.location);
     }
 
     getTotalScheduledTimeForArea(areaSchedule: ScheduledAd[]): number {
@@ -55,7 +55,13 @@ export class PlacementEngine {
     }
 
     isAdAlreadyScheduled(adId: string, schedule: Schedule): boolean {
-        return Object.values(schedule).flat().some(ad => ad.adId === adId);
+        for (const areaId in schedule) {
+            const areaSchedule = schedule[areaId];
+            for (let i = 0; i < areaSchedule.length; i++) {
+                if (areaSchedule[i].adId === adId) return true;
+            }
+        }
+        return false;
     }
 
     canScheduleAd(
@@ -80,7 +86,10 @@ export class PlacementEngine {
     }
 
     isAreaScheduleValid(area: Area, areaSchedule: ScheduledAd[], ads: Ad[]): boolean {
-        const adsById = new Map(ads.map((ad) => [ad.adId, ad]));
+        const adsById = new Map<string, Ad>();
+        for (let i = 0; i < ads.length; i++) {
+            adsById.set(ads[i].adId, ads[i]);
+        }
 
         // TODO: move this outside the function??
         const isScheduledAdEntryValid = (scheduledAd: ScheduledAd): boolean => {
