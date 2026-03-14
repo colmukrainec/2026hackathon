@@ -84,12 +84,78 @@ export class DayPlanner {
         boxes: Box[],
         routeIds: string[]
     ): number | null {
-        // TODO: implement this method
-        throw new Error('Not implemented');
+        const boxMap = new Map(boxes.map(b => [b.id, b]));
+
+        let total = 0;
+        let currentLocation = technician.startLocation;
+
+        for (const id of routeIds) {
+            const box = boxMap.get(id);
+            if (!box) return null;
+
+            const travel = this.travelTimeMinutes(
+                currentLocation,
+                box.location,
+                technician.speedKmh
+            );
+
+            total += travel + box.fixTimeMinutes;
+
+            if (total > technician.workingMinutes) return null;
+
+            currentLocation = box.location;
+        }
+
+        return total;
     }
 
     planDay(technician: Technician, boxes: Box[]): DayPlanResult {
-        // TODO: implement this method
-        throw new Error('Not implemented');
+        const remaining = new Map(boxes.map(b => [b.id, b]));
+
+        const route: string[] = [];
+        let timeUsed = 0;
+        let currentLocation = technician.startLocation;
+
+        while (remaining.size > 0) {
+
+            let bestBox: Box | null = null;
+            let bestScore = Infinity;
+            let bestTravel = 0;
+
+            for (const box of remaining.values()) {
+
+                const travel = this.travelTimeMinutes(
+                    currentLocation,
+                    box.location,
+                    technician.speedKmh
+                );
+
+                const cost = travel + box.fixTimeMinutes;
+
+                if (timeUsed + cost > technician.workingMinutes) continue;
+
+                if (cost < bestScore) {
+                    bestScore = cost;
+                    bestBox = box;
+                    bestTravel = travel;
+                }
+            }
+
+            if (!bestBox) break;
+
+            route.push(bestBox.id);
+            timeUsed += bestTravel + bestBox.fixTimeMinutes;
+
+            currentLocation = bestBox.location;
+            remaining.delete(bestBox.id);
+        }
+
+        return {
+            technicianId: technician.id,
+            plannedRoute: route,
+            totalTimeUsedMinutes: timeUsed,
+            boxesFixed: route.length,
+            skippedBoxIds: Array.from(remaining.keys())
+        };
     }
 }
