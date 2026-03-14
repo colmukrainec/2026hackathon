@@ -79,6 +79,8 @@ export class DayPlanner {
 
     // ── Your implementation below ─────────────────────────────────────────────
 
+
+    // this just sums up the time for a given route
     calculateRouteDuration(
         technician: Technician,
         boxes: Box[],
